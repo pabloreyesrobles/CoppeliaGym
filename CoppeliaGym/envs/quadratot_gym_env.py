@@ -9,7 +9,7 @@ from pyrep.objects.joint import Joint
 from pyrep.objects.shape import Shape
 from pyrep.objects.dummy import Dummy
 from pyrep.const import JointType, JointMode
-from pyrep.backend import sim
+from pyrep.backend import sim, simConst
 
 class QuadratotEnv(gym.Env):
     def __init__(self,
@@ -28,6 +28,11 @@ class QuadratotEnv(gym.Env):
         
         self._pr.launch(scene_path, headless=headless)
         self._pr.set_simulation_timestep(self.dt)
+
+        if not headless:
+            sim.simSetBoolParameter(simConst.sim_boolparam_browser_visible, False)
+            sim.simSetBoolParameter(simConst.sim_boolparam_hierarchy_visible, False)
+            sim.simSetBoolParameter(simConst.sim_boolparam_console_visible, False)
         #self._pr.start()
 
         # Custom env
@@ -37,19 +42,25 @@ class QuadratotEnv(gym.Env):
 
         self.action_space = Box(low=np.array([-np.pi / 3] * 9), high=np.array([np.pi / 3] * 9), dtype=np.float32) #Discrete(9)
 
-        bl = np.array([-np.inf] * 7 + [-np.pi / 3] * 9 + [-np.inf] * 6 + [-np.pi / 3] * 9)
-        bh = np.array([np.inf] * 7 + [np.pi / 3] * 9 + [np.inf] * 6 + [np.pi / 3] * 9)
+        bl = np.array([-np.inf] * 3 + [-np.pi / 3] * 9 + [-np.inf] * 6 + [-np.pi / 3] * 9)
+        bh = np.array([np.inf] * 3 + [np.pi / 3] * 9 + [np.inf] * 6 + [np.pi / 3] * 9)
         self.observation_space = Box(low=bl, high=bh, dtype=np.float32)
+
+        self.target = np.array([1e3 / np.sqrt(2), -1e3 / np.sqrt(2)])
+        self.progress = -np.linalg.norm(self.target - self.ref.get_position()[:2]) / self.dt
 
     def step(self, action):
         for key, joint in enumerate(self.joints):
             joint.set_joint_target_position(action[key])
 
-        xy_pos_before = self.ref.get_position()[:2]
         self._pr.step()
-        xy_pos_after = self.ref.get_position()[:2]
+        cur_progress = -np.linalg.norm(self.target - self.ref.get_position()[:2]) / self.dt
 
-        velocity = np.linalg.norm(xy_pos_after - xy_pos_before) / self.dt
+        #velocity = np.linalg.norm(xy_pos_after - xy_pos_before) #/ dt
+        #reward = velocity
+
+        reward = cur_progress - self.progress
+        self.progress = cur_progress
 
         done = False
         for part in self.collisions:
@@ -57,11 +68,8 @@ class QuadratotEnv(gym.Env):
                 done = True
                 break
         
-        reward = velocity
-
         # expand
         state = np.concatenate((self.ref.get_position(),
-                               self.ref.get_quaternion(),
                                [joint.get_joint_position() for joint in self.joints],
                                self.ref.get_velocity()[0],
                                self.ref.get_velocity()[1],
@@ -79,7 +87,6 @@ class QuadratotEnv(gym.Env):
         self._pr.start()
 
         state = np.concatenate((self.ref.get_position(),
-                               self.ref.get_quaternion(),
                                [joint.get_joint_position() for joint in self.joints],
                                self.ref.get_velocity()[0],
                                self.ref.get_velocity()[1],
