@@ -51,6 +51,8 @@ class ArgoV2Env(gym.Env):
         self.target = np.array([1e3 / np.sqrt(2), -1e3 / np.sqrt(2)])
         self.progress = -np.linalg.norm(self.target - self.ref.get_position()[:2]) / self.dt
 
+    collision_cost = 0.01
+    
     def step(self, action):
         for key, joint in enumerate(self.joints):
             joint.set_joint_target_position(action[key])
@@ -67,8 +69,9 @@ class ArgoV2Env(gym.Env):
         done = False
         for part in self.collisions:
             if sim.simReadCollision(part):
-                done = True
-                break
+                reward -= self.collision_cost
+                #done = True
+                #break
         
         # expand
         state = np.concatenate((self.ref.get_position(),
@@ -79,7 +82,14 @@ class ArgoV2Env(gym.Env):
 
         self.state = state
 
-        return self.state, reward, done, {}
+        info = {}
+        info['robot_pos'] = self.ref.get_position()
+        info['joint_pos'] = [joint.get_joint_position() for joint in self.joints]
+        info['robot_lvel'] = self.ref.get_velocity()[0]
+        info['robot_avel'] = self.ref.get_velocity()[1]
+        info['joint_vel'] = [joint.get_joint_velocity() for joint in self.joints]
+
+        return self.state, reward, done, info
 
     def render(self):
         pass

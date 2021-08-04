@@ -11,9 +11,10 @@ register(
 )
 
 register(
-    id='ArgoV2BulletEnv-v0',
+    id='ArgoV2Env-v0',
     entry_point=
     'CoppeliaGym.envs:ArgoV2Env',
     max_episode_steps=1200,
-    kwargs={'dt': 0.05},
+    kwargs={'dt': 0.05,
+            'headless': True},
 )
