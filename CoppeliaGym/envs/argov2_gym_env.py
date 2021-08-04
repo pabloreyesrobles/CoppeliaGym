@@ -33,6 +33,7 @@ class ArgoV2Env(gym.Env):
             sim.simSetBoolParameter(simConst.sim_boolparam_browser_visible, False)
             sim.simSetBoolParameter(simConst.sim_boolparam_hierarchy_visible, False)
             sim.simSetBoolParameter(simConst.sim_boolparam_console_visible, False)
+        sim.simSetBoolParameter(simConst.sim_boolparam_scene_and_model_load_messages, False)
         #self._pr.start()
 
         # Custom env
@@ -52,7 +53,7 @@ class ArgoV2Env(gym.Env):
         self.progress = -np.linalg.norm(self.target - self.ref.get_position()[:2]) / self.dt
 
     collision_cost = 0.01
-    
+
     def step(self, action):
         for key, joint in enumerate(self.joints):
             joint.set_joint_target_position(action[key])
@@ -67,12 +68,14 @@ class ArgoV2Env(gym.Env):
         self.progress = cur_progress
 
         done = False
+        collisions = 0
         for part in self.collisions:
             if sim.simReadCollision(part):
-                reward -= self.collision_cost
+                collisions += self.collision_cost
                 #done = True
                 #break
-        
+        #reward -= collisions
+
         # expand
         state = np.concatenate((self.ref.get_position(),
                                [joint.get_joint_position() for joint in self.joints],
@@ -88,6 +91,7 @@ class ArgoV2Env(gym.Env):
         info['robot_lvel'] = self.ref.get_velocity()[0]
         info['robot_avel'] = self.ref.get_velocity()[1]
         info['joint_vel'] = [joint.get_joint_velocity() for joint in self.joints]
+        info['collisions'] = collisions
 
         return self.state, reward, done, info
 
