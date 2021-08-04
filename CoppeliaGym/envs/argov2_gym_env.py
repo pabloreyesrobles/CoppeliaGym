@@ -11,11 +11,11 @@ from pyrep.objects.dummy import Dummy
 from pyrep.const import JointType, JointMode
 from pyrep.backend import sim, simConst
 
-class QuadratotEnv(gym.Env):
+class ArgoV2Env(gym.Env):
     def __init__(self,
-                 scene: str = 'Quadratot.ttt',
+                 scene: str = 'ArgoV2.ttt',
                  dt: float = 0.05,
-                 headless: bool = True) -> None:
+                 headless: bool = False) -> None:
 
         self._pr = PyRep()
         
@@ -36,10 +36,11 @@ class QuadratotEnv(gym.Env):
         #self._pr.start()
 
         # Custom env
-        self.num_joints = 9
+        self.num_joints = 12
         self.joints = [Joint('Joint{}'.format(i)) for i in range(1, self.num_joints + 1)]
-        self.collisions = [sim.simGetCollisionHandle('Collision{}'.format(i)) for i in range(4, 14)]
-        self.ref = Dummy('Quadratot_reference')
+        # Collisions are defined in CoppeliaSim. For this simulation just links and body
+        self.collisions = [sim.simGetCollisionHandle('Collision{}'.format(i)) for i in range(4, 17)]
+        self.ref = Dummy('ArgoV2_reference')
 
         self.action_space = Box(low=np.array([-np.pi / 3] * self.num_joints), high=np.array([np.pi / 3] * self.num_joints), dtype=np.float32) #Discrete(self.num_joints)
 

@@ -1,1 +1,2 @@
 from CoppeliaGym.envs.quadratot_gym_env import QuadratotEnv
+from CoppeliaGym.envs.argov2_gym_env import ArgoV2Env

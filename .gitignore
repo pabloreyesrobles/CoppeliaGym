@@ -1,0 +1,5 @@
+CoppeliaGym.egg-info/
+__pycache__/
+
+CoppeliaGym/__pycache__/
+CoppeliaGym/envs/__pycache__/
