@@ -15,7 +15,7 @@ class ArgoV2Env(gym.Env):
     def __init__(self,
                  scene: str = 'ArgoV2.ttt',
                  dt: float = 0.05,
-                 headless: bool = False) -> None:
+                 headless: bool = True) -> None:
 
         self._pr = PyRep()
         
